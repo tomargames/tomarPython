@@ -1,6 +1,6 @@
 #!/Users/tomar/Anaconda3/python.exe
 """
-Created on Sat May 27 16:34:21 2017 by tomar
+Created on Sat Nov 25 16:34:21 2017 by tomar
 #!/usr/bin/python3
 #!/Users/tomar/Anaconda3/python.exe
 """
@@ -18,6 +18,7 @@ import Tea
 print("Content-type: text/html \n")
 print('''
 <html><head><title>Tea</title>
+<LINK REL='StyleSheet' HREF='/python/songs.css?{}'  TYPE='text/css' TITLE='ToMarStyle' MEDIA='screen'>
 <LINK REL='StyleSheet' HREF='/python/tomar.css?{}'  TYPE='text/css' TITLE='ToMarStyle' MEDIA='screen'>
 <link href='//fonts.googleapis.com/css?family=Didact Gothic' rel='stylesheet'>
 <script src="https://apis.google.com/js/platform.js" async defer></script>
@@ -34,24 +35,13 @@ oper = form.getvalue('oper','')
 #gid = '106932376942135580175'
 gUtils.toggleDivFunction()
 print('''
-<script>
-function editPerson(x)
-{
-	document.gForm.action = "editPerson.py";
-	document.gForm.oper.value = x;
-	document.gForm.submit();
-}
-</script>
-	''')
-print('''
-<form name="gForm" method="POST" action="#">
+<form name="gForm" method="POST" action="index.py">
 <input type="hidden" name="gId" value="{}">
 <input type="hidden" name="gName" value="{}">
 <input type="hidden" name="gMail" value="{}">
 <input type="hidden" name="gImage" value="{}">
-<input type="hidden" name="oper">
-</form>
-'''.format(gid, name, gMail, gImg))
+<input type="hidden" name="oper" value="{}">
+'''.format(gid, name, gMail, gImg, oper))
 if gid == '':
 	gUtils.googleSignIn()
 else:
@@ -59,38 +49,12 @@ else:
 	authTea = users.authenticate(gid, name, gMail, gImg, users.TEA)
 	authAdm = users.authenticate(gid, name, gMail, gImg, users.ADMIN)
 	print(authTea[1])
-	if authTea[0] == '1':
+	if authAdm[0] == '1':
 		tea = Tea.Tea()
-		if oper != '':
-			if authAdm[0] == '1':
-				pid = form.getvalue('id', '')
-				first = form.getvalue('first', '')
-				last = form.getvalue('last', '')
-				src = form.getvalue('src', '')
-				ggl = form.getvalue('ggl', '')
-				teaString = ''
-				for t in sorted(tea.dates, reverse=True):
-					if form.getvalue('c{}'.format(t), '') == 'on':
-						teaString += '1'
-					else:
-						teaString += '0'
-				if oper == 'add':
-					tea.people[pid] = {}
-					tea.people[pid]["B"] = []
-					tea.people[pid]["H"] = []
-					tea.people[pid]["D"] = []
-				#print('{} {} {} {} {} {}'.format(pid, first, last, src, teaString, ggl))
-				tea.updatePerson(pid, first, last, src, teaString, ggl)
-				print('<script> document.gForm.submit(); </script>')
-			else:
-				print("Error: not admin and oper is {}".format(oper))
+		if oper == 'add':
+			print(tea.addNewPerson())
 		else:
-			print(tea.displayTeas())
-			print(tea.displayPeople(authAdm[0], users))
-			if authAdm[0] == '1':
-				print('<br><br><a href=javascript:editPerson("add");>Add a person</a>')
+			print(tea.displayPerson(oper))
 	else:
-		print('''
-Welcome to ToMarGames Friends and Family!<br><br>It looks like you've landed on a page you don't have permission to access.
-				''')
+		print("Sorry, you are not authorized to use this page.")
 print('</body></html>')

@@ -12,37 +12,28 @@ except:
 	sys.path.append("..")
 	import gUtils
 	import Users
+import utils
 import cgi
 import random
-import Tea
+import json
 print("Content-type: text/html \n")
 print('''
-<html><head><title>Tea</title>
+<html><head><title>Sudoku Game History</title>
+<script src="/python/utils.js"></script>
+<LINK REL='StyleSheet' HREF='/python/songs.css?{}'  TYPE='text/css' TITLE='ToMarStyle' MEDIA='screen'>
 <LINK REL='StyleSheet' HREF='/python/tomar.css?{}'  TYPE='text/css' TITLE='ToMarStyle' MEDIA='screen'>
 <link href='//fonts.googleapis.com/css?family=Didact Gothic' rel='stylesheet'>
 <script src="https://apis.google.com/js/platform.js" async defer></script>
 <meta name="google-signin-client_id" content="932688745244-i4vfeap5jgu8id5dagrc49786vvs0qrf.apps.googleusercontent.com">
-</head>
-<body>
 '''.format(random.randrange(9999), random.randrange(9999)))
+gUtils.goTo()
+gUtils.toggleDiv()
 form = cgi.FieldStorage() # instantiate only once!
 gid = form.getvalue('gId', '')	#remove default
 name = form.getvalue('gName', '')	#remove default
 gMail = form.getvalue('gMail', '')	#remove default
 gImg = form.getvalue('gImage', '')	#remove default
 oper = form.getvalue('oper','')
-#gid = '106932376942135580175'
-gUtils.toggleDivFunction()
-print('''
-<script>
-function editPerson(x)
-{
-	document.gForm.action = "editPerson.py";
-	document.gForm.oper.value = x;
-	document.gForm.submit();
-}
-</script>
-	''')
 print('''
 <form name="gForm" method="POST" action="#">
 <input type="hidden" name="gId" value="{}">
@@ -52,43 +43,39 @@ print('''
 <input type="hidden" name="oper">
 </form>
 '''.format(gid, name, gMail, gImg))
+#gid = "106932376942135580175"
 if gid == '':
 	gUtils.googleSignIn()
 else:
 	users = Users.Users()
-	authTea = users.authenticate(gid, name, gMail, gImg, users.TEA)
-	authAdm = users.authenticate(gid, name, gMail, gImg, users.ADMIN)
-	print(authTea[1])
-	if authTea[0] == '1':
-		tea = Tea.Tea()
-		if oper != '':
-			if authAdm[0] == '1':
-				pid = form.getvalue('id', '')
-				first = form.getvalue('first', '')
-				last = form.getvalue('last', '')
-				src = form.getvalue('src', '')
-				ggl = form.getvalue('ggl', '')
-				teaString = ''
-				for t in sorted(tea.dates, reverse=True):
-					if form.getvalue('c{}'.format(t), '') == 'on':
-						teaString += '1'
-					else:
-						teaString += '0'
-				if oper == 'add':
-					tea.people[pid] = {}
-					tea.people[pid]["B"] = []
-					tea.people[pid]["H"] = []
-					tea.people[pid]["D"] = []
-				#print('{} {} {} {} {} {}'.format(pid, first, last, src, teaString, ggl))
-				tea.updatePerson(pid, first, last, src, teaString, ggl)
-				print('<script> document.gForm.submit(); </script>')
+	authS = users.authenticate(gid, name, gMail, gImg, users.SUDOKU)		# gets you into shanghai
+	authA = users.authenticate(gid, name, gMail, gImg, users.ADMIN)
+	print(authS[1])
+	if authS[0] == '1':
+		with open("games.json") as gData:
+			games = json.load(gData)
+		gDict = {}
+		for g in games:
+			id = g["I"]
+			if (id in gDict):
+				gDict[id].append((g["T"], g["N"]))
 			else:
-				print("Error: not admin and oper is {}".format(oper))
+				gDict[id] = [((g["T"], g["N"]))]
+		if authA[0] == '1':
+			for u in sorted(gDict):
+				print('''<br><a class="textL" style="color: blue; font-size: 1.2em;" href="javascript:'" ''')
+				print(''' onClick=javascript:toggleDiv("div{}")>{} ({})</a>'''.format(u, u, len(gDict[u])))
+				print('''<div id="div{}" style="display:none;";>'''.format(u))
+				print('''<table border=0><tr><th>Date</th><th>Puzzle Number</th>''')
+				for g in gDict[u]:
+					print('''<tr><td>{}</td><td class="textR">{}</td></tr>'''.format(utils.formatDate(g[0][0:8]), g[1]))
+				print('''</table>''')
+				print('''</div>''')
 		else:
-			print(tea.displayTeas())
-			print(tea.displayPeople(authAdm[0], users))
-			if authAdm[0] == '1':
-				print('<br><br><a href=javascript:editPerson("add");>Add a person</a>')
+			print('''<table border=0><tr><th>Date</th><th>Puzzle Number</th>''')
+			for g in gDict[gid]:
+				print('''<tr><td>{}</td><td class="textR">{}</td></tr>'''.format(utils.formatDate(g[0][0:8]), g[1]))
+			print('''</table>''')
 	else:
 		print('''
 Welcome to ToMarGames Friends and Family!<br><br>It looks like you've landed on a page you don't have permission to access.
